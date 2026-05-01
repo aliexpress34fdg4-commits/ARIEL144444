@@ -5,6 +5,10 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
+# ---- בדיקת TOKEN ----
+if not TOKEN:
+    raise Exception("Missing TELEGRAM_TOKEN in Railway Variables")
+
 # ---- תרגום ----
 def translate(text):
     url = "https://api.mymemory.translated.net/get"
@@ -21,24 +25,37 @@ def stock_price(symbol):
     except:
         return None
 
+# ---- /start ----
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 הבוט עובד!\nשלח טקסט או stock AAPL")
+    await update.message.reply_text(
+        "👋 הבוט עובד!\n\n"
+        "כתוב טקסט לתרגום 🌍\n"
+        "או: stock AAPL 📈"
+    )
 
+# ---- הודעות ----
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
+    # מניה
     if text.lower().startswith("stock"):
-        symbol = text.split(" ")[1].upper()
-        price = stock_price(symbol)
-        if price:
-            await update.message.reply_text(f"📈 {symbol}: ${price}")
-        else:
-            await update.message.reply_text("לא נמצא")
+        try:
+            symbol = text.split(" ")[1].upper()
+            price = stock_price(symbol)
+
+            if price:
+                await update.message.reply_text(f"📈 {symbol}: ${price}")
+            else:
+                await update.message.reply_text("❌ לא נמצא סמל מניה")
+        except:
+            await update.message.reply_text("❌ שימוש: stock AAPL")
         return
 
+    # תרגום
     result = translate(text)
     await update.message.reply_text(f"🌍 {result}")
 
+# ---- הפעלה ----
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
